@@ -1,0 +1,19 @@
+{
+    "players": {
+        "Chri": { "points": 0, "jolly": 3, "debt": 0 },
+        "Gabbo": { "points": 0, "jolly": 3, "debt": 0 },
+        "Pavi": { "points": 0, "jolly": 3, "debt": 0 },
+        "Fruca": { "points": 0, "jolly": 3, "debt": 0 },
+        "Effe": { "points": 0, "jolly": 3, "debt": 0 },
+        "Gargiu": { "points": 0, "jolly": 3, "debt": 0 },
+        "Gio": { "points": 0, "jolly": 3, "debt": 0 }
+    },
+    "bets": {},
+    "malloppo": {
+        "giocate_sbagliate": 0,
+        "jolly": 0,
+        "giocate_malloppo": 0
+    },
+    "giornate": []
+}
+
