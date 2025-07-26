@@ -1,13 +1,12 @@
-
 import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import json
 
-TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"  # Da sostituire con il vero token su Railway
+TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"  # Usa direttamente su Railway
 DATA_FILE = "data.json"
 
-# ✅ Definisci l'elenco dei giocatori
+# ✅ Giocatori
 GIOCATORI = ["Chri", "Gabbo", "Pavi", "Fruca", "Effe", "Gargiu", "Gio"]
 
 def load_data():
@@ -35,6 +34,13 @@ async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response += f"{nome:<10} →  {jolly_usati} jolly\n"
     await update.message.reply_text(response)
 
+async def delete_webhook_and_run(app):
+    await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+    await app.updater.idle()
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -42,16 +48,8 @@ def main():
     app.add_handler(CommandHandler("jolly", jolly))
 
     print("🚀 Bot avviato...")
-
     asyncio.run(delete_webhook_and_run(app))
-
-async def delete_webhook_and_run(app):
-    await app.bot.delete_webhook(drop_pending_updates=True)
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling()
-    await app.updater.idle()
-    app.run_polling()
 
 if __name__ == "__main__":
     main()
+
