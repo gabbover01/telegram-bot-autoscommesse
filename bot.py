@@ -16,7 +16,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
-    response = "📊 Classifica:
+    response = "📊 Classifica:\n"
 "
     for user, info in data["players"].items():
         response += f"{user}: {info['points']} punti | Jolly usati: {info.get('jolly', 0)}
