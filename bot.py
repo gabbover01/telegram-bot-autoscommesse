@@ -28,7 +28,7 @@ def main():
         raise ValueError("❌ TOKEN non trovato. Imposta la variabile TELEGRAM_BOT_TOKEN su Railway.")
 
     app = ApplicationBuilder().token(TOKEN).build()
-
+    await app.bot.delete_webhook(drop_pending_updates=True)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
 
