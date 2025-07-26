@@ -17,23 +17,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     classifica = data.get("classifica", {})
-    response = "📊 Classifica:
-"
+    response = "📊 Classifica:\n"
     for nome in GIOCATORI:
         punti = classifica.get(nome, 0)
-        response += f"{nome:<10} →  {punti} punti
-"
+        response += f"{nome:<10} →  {punti} punti\n"
     await update.message.reply_text(response)
 
 async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     jolly_dict = data.get("jolly", {})
-    response = "🃏 Jolly usati:
-"
+    response = "🃏 Jolly usati:\n"
     for nome in GIOCATORI:
         jolly_usati = jolly_dict.get(nome, 0)
-        response += f"{nome:<10} →  {jolly_usati} jolly
-"
+        response += f"{nome:<10} →  {jolly_usati} jolly\n"
     await update.message.reply_text(response)
 
 def main():
