@@ -17,20 +17,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     response = "📊 Classifica:\n"
-"
     for user, info in data["players"].items():
-        response += f"{user}: {info['points']} punti | Jolly usati: {info.get('jolly', 0)}
-"
+        response += f"{user}: {info['points']} punti | Jolly usati: {info.get('jolly', 0)}"
     await update.message.reply_text(response)
 
 async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
-    response = "🃏 Jolly usati:
-"
+    response = "🃏 Jolly usati:\n"
     for user, info in data["players"].items():
         jolly_usati = info.get("jolly", 0)
-        response += f"{user}: {jolly_usati} jolly
-"
+        response += f"{user}: {jolly_usati} jolly"
     await update.message.reply_text(response)
 
 def main():
