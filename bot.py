@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import json
 
-TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"  # Da sostituire con il vero token su Railway
+TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # Da sostituire con il vero token su Railway
 
 DATA_FILE = "data.json"
 
@@ -16,17 +16,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
-    response = "📊 Classifica:\n"
-    for user, info in data["players"].items():
-        response += f"{user}: {info['points']} punti | Jolly usati: {info.get('jolly', 0)}"
+    classifica = data.get("classifica", {})
+    response = "📊 Classifica:
+"
+    for nome in GIOCATORI:
+        punti = classifica.get(nome, 0)
+        response += f"{nome:<10} →  {punti} punti
+"
     await update.message.reply_text(response)
 
 async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
-    response = "🃏 Jolly usati:\n"
-    for user, info in data["players"].items():
-        jolly_usati = info.get("jolly", 0)
-        response += f"{user}: {jolly_usati} jolly"
+    jolly_dict = data.get("jolly", {})
+    response = "🃏 Jolly usati:
+"
+    for nome in GIOCATORI:
+        jolly_usati = jolly_dict.get(nome, 0)
+        response += f"{nome:<10} →  {jolly_usati} jolly
+"
     await update.message.reply_text(response)
 
 def main():
