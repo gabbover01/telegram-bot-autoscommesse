@@ -1,5 +1,5 @@
 from telegram.ext import CommandHandler
-from utils import load_data
+from game_utils import load_data
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import os
