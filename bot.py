@@ -21,22 +21,27 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Bot attivo!")
 
-def main():
-    print("🔍 TOKEN:", TOKEN)
+import asyncio  # Assicurati di averlo importato in alto
 
-    if not TOKEN:
-        raise ValueError("❌ TOKEN non trovato. Imposta la variabile TELEGRAM_BOT_TOKEN su Railway.")
-
+async def main():
     app = ApplicationBuilder().token(TOKEN).build()
-    await app.bot.delete_webhook(drop_pending_updates=True)
+
+    await app.bot.delete_webhook(drop_pending_updates=True)  # ✅ fix qui
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
+    app.add_handler(CommandHandler("estrai", estrai))
+    app.add_handler(CommandHandler("gioca", gioca))
+    app.add_handler(CommandHandler("inizio_giornata", inizio_giornata))
+    app.add_handler(CommandHandler("fine_giornata", fine_giornata))
+    app.add_handler(CommandHandler("jolly", mostra_jolly))
 
     print("🚀 Bot avviato...")
-    app.run_polling()
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
+
 
 # Modifica forzata per commit
 
