@@ -22,15 +22,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Bot attivo!")
 
 def main():
-    app.add_handler(CommandHandler("classifica", classifica))
-
     print("🔍 TOKEN:", TOKEN)
 
     if not TOKEN:
         raise ValueError("❌ TOKEN non trovato. Imposta la variabile TELEGRAM_BOT_TOKEN su Railway.")
 
     app = ApplicationBuilder().token(TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("classifica", classifica))
+
     print("🚀 Bot avviato...")
     app.run_polling()
 
