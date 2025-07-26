@@ -39,7 +39,17 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
     app.add_handler(CommandHandler("jolly", jolly))
+
     print("🚀 Bot avviato...")
+
+    asyncio.run(delete_webhook_and_run(app))
+
+async def delete_webhook_and_run(app):
+    await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+    await app.updater.idle()
     app.run_polling()
 
 if __name__ == "__main__":
