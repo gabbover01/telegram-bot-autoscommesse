@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import json
 
-TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # Da sostituire con il vero token su Railway
+TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"  # Da sostituire con il vero token su Railway
 
 DATA_FILE = "data.json"
 
