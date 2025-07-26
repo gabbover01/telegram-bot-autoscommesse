@@ -1,41 +1,45 @@
-from telegram.ext import CommandHandler
-from game_utils import load_data
+
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-import os
-async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    players = data["players"]
+import json
 
-    classifica_text = "📊 Classifica attuale:\n"
-    sorted_players = sorted(players.items(), key=lambda x: x[1]["points"])
+TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # Da sostituire con il vero token su Railway
 
-    for nome, info in sorted_players:
-        classifica_text += f"• {nome}: {info['points']} punti\n"
+DATA_FILE = "data.json"
 
-    await update.message.reply_text(classifica_text)
-
-# Leggi il token dalla variabile d'ambiente
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+def load_data():
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot attivo!")
+    await update.message.reply_text("Ciao! Benvenuto nel bot delle autoscommesse! ⚽")
+
+async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    response = "📊 Classifica:
+"
+    for user, info in data["players"].items():
+        response += f"{user}: {info['points']} punti | Jolly usati: {info.get('jolly', 0)}
+"
+    await update.message.reply_text(response)
+
+async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    response = "🃏 Jolly usati:
+"
+    for user, info in data["players"].items():
+        jolly_usati = info.get("jolly", 0)
+        response += f"{user}: {jolly_usati} jolly
+"
+    await update.message.reply_text(response)
 
 def main():
-    print("🔍 TOKEN:", TOKEN)
-
-    if not TOKEN:
-        raise ValueError("❌ TOKEN non trovato. Imposta la variabile TELEGRAM_BOT_TOKEN su Railway.")
-
     app = ApplicationBuilder().token(TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
-
+    app.add_handler(CommandHandler("jolly", jolly))
     print("🚀 Bot avviato...")
     app.run_polling()
 
 if __name__ == "__main__":
     main()
-# Modifica forzata per commit
-
