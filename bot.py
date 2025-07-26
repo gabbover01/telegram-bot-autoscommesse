@@ -4,8 +4,10 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import json
 
 TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"  # Da sostituire con il vero token su Railway
-
 DATA_FILE = "data.json"
+
+# ✅ Definisci l'elenco dei giocatori
+GIOCATORI = ["Chri", "Gabbo", "Pavi", "Fruca", "Effe", "Gargiu", "Gio"]
 
 def load_data():
     with open(DATA_FILE, "r", encoding="utf-8") as f:
