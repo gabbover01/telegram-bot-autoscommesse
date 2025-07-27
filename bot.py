@@ -34,12 +34,9 @@ async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response += f"{nome:<10} →  {jolly_usati} jolly\n"
     await update.message.reply_text(response)
 
-async def delete_webhook_and_run(app):
-    await app.bot.delete_webhook(drop_pending_updates=True)
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling()
-    await app.updater.idle()
+import os
+
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -47,8 +44,12 @@ def main():
     app.add_handler(CommandHandler("classifica", classifica))
     app.add_handler(CommandHandler("jolly", jolly))
 
-    print("🚀 Bot avviato...")
-    asyncio.run(delete_webhook_and_run(app))
+    print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 8080)),
+        webhook_url=WEBHOOK_URL,
+    )
 
 if __name__ == "__main__":
     main()
