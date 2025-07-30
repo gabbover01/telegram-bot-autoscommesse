@@ -151,6 +151,172 @@ def estrai_partite() -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         "leftover": leftover,
     }, None
 
+def verifica_giocata(giocata: dict, data_match: dict) -> str:
+    tipo = giocata.get("tipo_verifica")
+    d = giocata.get("dati_verifica", {})
+
+    if tipo == "combo_esito":
+        esiti = d.get("esiti", [])
+        gol_totali = data_match["gol_totali"]
+        esito_finale = data_match["esito"]  # "1", "X", "2"
+        gol_range = d.get("gol_range")
+
+        if esito_finale in esiti or any(e in esiti for e in ["1X", "X2", "12"] if esito_finale in e):
+            if gol_range:
+                if gol_range[0] <= gol_totali <= gol_range[1]:
+                    return "vinta"
+                else:
+                    return "persa"
+            return "vinta"
+        return "persa"
+
+    elif tipo == "combo_esito_gol":
+        esiti = d.get("esiti", [])
+        gol_both = data_match["gol_casa"] > 0 and data_match["gol_trasferta"] > 0
+        nogol_both = data_match["gol_casa"] == 0 or data_match["gol_trasferta"] == 0
+        esito_finale = data_match["esito"]
+
+        if esito_finale in esiti or any(e in esiti for e in ["1X", "X2", "12"] if esito_finale in e):
+            if d.get("gol") == "gol" and gol_both:
+                return "vinta"
+            elif d.get("gol") == "nogol" and nogol_both:
+                return "vinta"
+        return "persa"
+
+    elif tipo == "combo_esito_over":
+        esiti = d.get("esiti", [])
+        over_under = d.get("over_under", {})
+        gol_totali = data_match["gol_totali"]
+        esito_finale = data_match["esito"]
+
+        if esito_finale in esiti or any(e in esiti for e in ["1X", "X2", "12"] if esito_finale in e):
+            val = over_under["valore"]
+            if over_under["tipo"] == "over" and gol_totali > val:
+                return "vinta"
+            elif over_under["tipo"] == "under" and gol_totali < val:
+                return "vinta"
+        return "persa"
+
+    elif tipo == "multigol_squadre":
+        g_home = data_match["gol_casa"]
+        g_away = data_match["gol_trasferta"]
+        r_home = d["casa"]
+        r_away = d["trasferta"]
+        if r_home[0] <= g_home <= r_home[1] and r_away[0] <= g_away <= r_away[1]:
+            return "vinta"
+        return "persa"
+
+    elif tipo == "statistica_partita":
+        val = d["valore"]
+        cond = d["condizione"]
+        stat = d["statistica"]
+        valore_match = data_match["statistiche_partita"].get(stat, 0)
+        if cond == "over" and valore_match > val:
+            return "vinta"
+        if cond == "under" and valore_match < val:
+            return "vinta"
+        return "persa"
+
+    elif tipo == "statistica_giocatore":
+        player = d["giocatore"]
+        stat = d["statistica"]
+        valore = d["valore"]
+        player_stats = data_match["giocatori"].get(player, {})
+        if player_stats.get(stat, 0) >= valore:
+            return "vinta"
+        return "persa"
+
+    elif tipo == "cartellino":
+        player = d["giocatore"]
+        cards = data_match["giocatori"].get(player, {}).get("cards", 0)
+        return "vinta" if cards >= 1 else "persa"
+
+    elif tipo == "giocatore_gol_o_assist":
+        player = d["giocatore"]
+        stats = data_match["giocatori"].get(player, {})
+        if stats.get("goals", 0) >= 1 or stats.get("assists", 0) >= 1:
+            return "vinta"
+        return "persa"
+
+    elif tipo == "chance_mix":
+        cond1 = d.get("cond1")
+        cond2 = d.get("cond2")
+        # Qui dovrai decidere la logica OR per i due elementi
+        # es: cond1 = {"tipo": "esito", "valore": "1X"}, cond2 = {"tipo": "gol", "valore": "gol"}
+        # È un tipo flessibile, va strutturato caso per caso
+
+        # per ora ritorno sempre "non implementato"
+        return "non_verificabile"
+
+    elif tipo == "combo_tripla":
+        esiti = d.get("esiti", [])
+        esito_ok = data_match["esito"] in esiti or any(e in esiti for e in ["1X", "X2", "12"] if data_match["esito"] in e)
+        over_under = d.get("over_under")
+        gol_check = d.get("gol") == "gol" and (data_match["gol_casa"] > 0 and data_match["gol_trasferta"] > 0)
+        nogol_check = d.get("gol") == "nogol" and (data_match["gol_casa"] == 0 or data_match["gol_trasferta"] == 0)
+
+        if over_under:
+            val = over_under["valore"]
+            if over_under["tipo"] == "over":
+                ou_check = data_match["gol_totali"] > val
+            else:
+                ou_check = data_match["gol_totali"] < val
+        else:
+            ou_check = True
+
+        if esito_ok and ou_check and (gol_check or nogol_check):
+            return "vinta"
+        return "persa"
+
+    return "non_verificabile"
+
+import requests
+from bs4 import BeautifulSoup
+import time
+
+def get_match_data(partita_nome: str) -> dict:
+    """Scrape dei dati da Sofascore per una partita tipo 'Roma-Napoli'"""
+    base_url = "https://www.sofascore.com"
+    search_url = f"{base_url}/team/search/{partita_nome.replace(' ', '-').lower()}"
+    
+    # Simuliamo ricerca e redirect manuale (semplificato)
+    # In realtà Sofascore usa JS, quindi qui ci vuole un link diretto a match finito
+    # Per ora: mock dati di esempio
+
+    # Simulazione struttura dati (da scraping reale)
+    return {
+        "esito": "1",  # "1", "X", "2"
+        "gol_casa": 2,
+        "gol_trasferta": 1,
+        "gol_totali": 3,
+        "statistiche_partita": {
+            "corners": 9,
+            "fouls": 24
+        },
+        "giocatori": {
+            "Pellegrini": {
+                "shots_on_target": 3,
+                "shots_total": 5,
+                "goals": 1,
+                "assists": 1,
+                "cards": 0,
+                "passes": 55,
+                "saves": 0
+            },
+            "Di Lorenzo": {
+                "shots_on_target": 1,
+                "shots_total": 2,
+                "goals": 0,
+                "assists": 0,
+                "cards": 1,
+                "passes": 40,
+                "saves": 0
+            },
+            "Sommer": {
+                "saves": 5
+            }
+        }
+    }
 
 def inizio_giornata() -> Tuple[Optional[int], Optional[str]]:
     """Mark the most recently extracted giornata as started.
