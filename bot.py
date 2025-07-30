@@ -495,6 +495,33 @@ async def malloppo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text, parse_mode="Markdown")
 
+async def giornate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    bets = data.get("bets", {})
+    if not bets:
+        await update.message.reply_text("❌ Nessuna giornata ancora registrata.")
+        return
+
+    response = "📅 *Storico Giornate*\n\n"
+    sorted_keys = sorted(bets.keys(), key=lambda x: int(x))
+
+    for g_key in sorted_keys:
+        giornata = bets[g_key]
+        if giornata.get("status") != "finished":
+            continue  # salta giornate non concluse
+
+        sbaglianti = []
+        for username, giocata in giornata.get("bets", {}).items():
+            if giocata.get("esito") == "persa":
+                sbaglianti.append(username)
+
+        if sbaglianti:
+            response += f"G{g_key}: {', '.join(sbaglianti)}\n"
+        else:
+            response += f"G{g_key}: 🏆 Nessun errore!\n"
+
+    await update.message.reply_text(response, parse_mode="Markdown")
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -512,6 +539,7 @@ def main():
     app.add_handler(CommandHandler("versa", versa))
     app.add_handler(CommandHandler("malloppo", malloppo))
     app.add_handler(CommandHandler("modifica", modifica))
+    app.add_handler(CommandHandler("giornate", giornate))
 
 
     print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
