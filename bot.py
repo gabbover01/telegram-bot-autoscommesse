@@ -205,6 +205,29 @@ async def fine_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ {error}")
     else:
         await update.message.reply_text(f"✅ Giornata {giornata_num} conclusa correttamente. Ora puoi usare /estrai per la prossima.")
+from game_utils import estrai_partite  # assicurati che sia importato
+
+async def estrai_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    result, error = estrai_partite()
+    if error:
+        await update.message.reply_text(f"❌ {error}")
+        return
+
+    giornata = result["giornata"]
+    assignments = result["assignments"]
+    leftover = result["leftover"]
+
+    text = f"🎲 *Partite estratte per la giornata {giornata}*\n\n"
+    for player, match in assignments.items():
+        username = next((u for u, n in USERNAME_TO_NAME.items() if n == player), player)
+        text += f"{username}: {match}\n"
+
+    if leftover:
+        text += "\n❗ Partite non assegnate:\n"
+        for match in leftover:
+            text += f"- {match}\n"
+
+    await update.message.reply_text(text, parse_mode="Markdown")
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -215,6 +238,8 @@ def main():
     app.add_handler(CommandHandler("inizio_giornata", inizio_giornata_cmd))
     app.add_handler(CommandHandler("fine_giornata", fine_giornata_cmd))
     app.add_handler(CallbackQueryHandler(handle_jolly_response))
+    app.add_handler(CommandHandler("estrai", estrai_cmd))
+
 
     print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
     app.run_webhook(
