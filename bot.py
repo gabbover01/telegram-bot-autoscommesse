@@ -92,6 +92,36 @@ async def gioca(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+async def modifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    username = f"@{user.username}"
+
+    if username not in USERNAME_TO_NAME:
+        await update.message.reply_text("❌ Non sei autorizzato a modificare una giocata.")
+        return
+
+    data = load_data()
+    bets = data.get("bets", {})
+    if not bets:
+        await update.message.reply_text("❌ Nessuna giornata attiva.")
+        return
+
+    g_key = str(max(int(k) for k in bets.keys()))
+    giornata = bets[g_key]
+
+    if giornata["status"] != "assigned":
+        await update.message.reply_text("⚠️ La giornata è già iniziata, non puoi più modificare la giocata.")
+        return
+
+    if username not in giornata.get("bets", {}):
+        await update.message.reply_text("❌ Non hai ancora fatto una giocata da modificare.")
+        return
+
+    del giornata["bets"][username]
+    save_data(data)
+
+    await update.message.reply_text("✏️ Giocata precedente cancellata. Invia la nuova con `/gioca <giocata> <quota>`.")
+
 async def handle_jolly_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -481,6 +511,7 @@ def main():
     app.add_handler(CommandHandler("soldi", soldi))
     app.add_handler(CommandHandler("versa", versa))
     app.add_handler(CommandHandler("malloppo", malloppo))
+    app.add_handler(CommandHandler("modifica", modifica))
 
 
     print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
