@@ -442,6 +442,29 @@ async def versa(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text, parse_mode="Markdown")
 
+async def malloppo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    args = context.args
+
+    solo_giocate = False
+    if args and args[0] == "solo_giocate":
+        solo_giocate = True
+
+    m = data["malloppo"]
+    totale = m["giocate_sbagliate"] + m["penali_jolly"] + m["giocate_gruppo"]
+    
+    if solo_giocate:
+        text = f"💰 *Malloppo solo giocate sbagliate:* {m['giocate_sbagliate']}€"
+    else:
+        text = (
+            f"💰 *Malloppo Totale: {totale}€*\n\n"
+            f"- Giocate sbagliate: {m['giocate_sbagliate']}€\n"
+            f"- Penali jolly: {m['penali_jolly']}€\n"
+            f"- Giocate di gruppo: {m['giocate_gruppo']}€"
+        )
+
+    await update.message.reply_text(text, parse_mode="Markdown")
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -457,6 +480,7 @@ def main():
     app.add_handler(CommandHandler("aggiorna", aggiorna_cmd))
     app.add_handler(CommandHandler("soldi", soldi))
     app.add_handler(CommandHandler("versa", versa))
+    app.add_handler(CommandHandler("malloppo", malloppo))
 
 
     print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
