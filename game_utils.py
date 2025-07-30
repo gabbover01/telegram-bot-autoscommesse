@@ -277,7 +277,8 @@ import time
 import requests
 from datetime import datetime, timedelta
 
-API_KEY = "a5586f235c2a1d0b3ae568fa2929bf4d"
+import os
+API_KEY = os.getenv("FOOTBALL_API_KEY")
 API_HOST = "https://v3.football.api-sports.io"
 
 headers = {
