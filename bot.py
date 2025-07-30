@@ -383,6 +383,65 @@ async def estrai_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text, parse_mode="Markdown")
 
+async def soldi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    response = "💰 *Situazione versamenti:*\n\n"
+
+    for username, name in USERNAME_TO_NAME.items():
+        player = data["players"][name]
+        debt = player.get("debt", 0)
+        paid = player.get("paid", 0)
+        status = "✅" if paid >= debt else "❌"
+        response += f"{username:<15} → Deve {debt}€, Ha versato {paid}€ {status}\n"
+
+    await update.message.reply_text(response, parse_mode="Markdown")
+
+
+async def versa(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if user.username != "Federico9499":
+        await update.message.reply_text("❌ Solo Fruca può gestire i versamenti.")
+        return
+
+    try:
+        args = context.args
+        if len(args) != 2:
+            raise ValueError("Formato errato")
+
+        username = args[0]
+        euro = int(args[1])
+
+        if username not in USERNAME_TO_NAME:
+            await update.message.reply_text("❌ Username non valido.")
+            return
+
+        name = USERNAME_TO_NAME[username]
+        data = load_data()
+
+        data["players"][name].setdefault("paid", 0)
+        data["players"][name]["paid"] += euro
+
+        save_data(data)
+        await update.message.reply_text(f"✅ Aggiunti {euro}€ a {username}.")
+    except Exception as e:
+        await update.message.reply_text("⚠️ Usa il formato: /versa @username <euro>\nEsempio: /versa @Chris4rda 5")
+
+    giornata = result["giornata"]
+    assignments = result["assignments"]
+    leftover = result["leftover"]
+
+    text = f"🎲 *Partite estratte per la giornata {giornata}*\n\n"
+    for player, match in assignments.items():
+        username = next((u for u, n in USERNAME_TO_NAME.items() if n == player), player)
+        text += f"{username}: {match}\n"
+
+    if leftover:
+        text += "\n❗ Partite non assegnate:\n"
+        for match in leftover:
+            text += f"- {match}\n"
+
+    await update.message.reply_text(text, parse_mode="Markdown")
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -396,6 +455,8 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_verifica_callback, pattern="^verifica_"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ricevi_testo_verifica))
     app.add_handler(CommandHandler("aggiorna", aggiorna_cmd))
+    app.add_handler(CommandHandler("soldi", soldi))
+    app.add_handler(CommandHandler("versa", versa))
 
 
     print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
