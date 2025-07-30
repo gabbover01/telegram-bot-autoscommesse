@@ -36,14 +36,36 @@
             "debt": 0
         }
     },
-    "games": {},
-    "jornate_status": {
-        "current": 1,
-        "is_active": false
-    },
     "malloppo": {
         "giocate_sbagliate": 0,
         "penali_jolly": 0,
         "giocate_gruppo": 0
-    }
+    },
+    "bets": {
+        "999": {
+            "assignments": {
+                "Chri": "Roma-Napoli"
+            },
+            "bets": {
+                "@Chris4rda": {
+                    "giocata": "Over 2.5",
+                    "quota": 1.75,
+                    "jolly": false,
+                    "tipo_verifica": "combo_esito",
+                    "dati_verifica": {
+                        "esiti": [
+                            "Over"
+                        ],
+                        "gol_min": 3
+                    },
+                    "esito": "pending"
+                }
+            },
+            "status": "finished",
+            "settled": false
+        }
+    },
+    "giornate": [
+        999
+    ]
 }
