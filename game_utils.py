@@ -274,49 +274,92 @@ import requests
 from bs4 import BeautifulSoup
 import time
 
-def get_match_data(partita_nome: str) -> dict:
-    """Scrape dei dati da Sofascore per una partita tipo 'Roma-Napoli'"""
-    base_url = "https://www.sofascore.com"
-    search_url = f"{base_url}/team/search/{partita_nome.replace(' ', '-').lower()}"
-    
-    # Simuliamo ricerca e redirect manuale (semplificato)
-    # In realtà Sofascore usa JS, quindi qui ci vuole un link diretto a match finito
-    # Per ora: mock dati di esempio
+import requests
+from datetime import datetime, timedelta
 
-    # Simulazione struttura dati (da scraping reale)
-    return {
-        "esito": "1",  # "1", "X", "2"
-        "gol_casa": 2,
-        "gol_trasferta": 1,
-        "gol_totali": 3,
-        "statistiche_partita": {
-            "corners": 9,
-            "fouls": 24
-        },
-        "giocatori": {
-            "Pellegrini": {
-                "shots_on_target": 3,
-                "shots_total": 5,
-                "goals": 1,
-                "assists": 1,
-                "cards": 0,
-                "passes": 55,
-                "saves": 0
-            },
-            "Di Lorenzo": {
-                "shots_on_target": 1,
-                "shots_total": 2,
-                "goals": 0,
-                "assists": 0,
-                "cards": 1,
-                "passes": 40,
-                "saves": 0
-            },
-            "Sommer": {
-                "saves": 5
-            }
+API_KEY = "a5586f235c2a1d0b3ae568fa2929bf4d"
+API_HOST = "https://v3.football.api-sports.io"
+
+headers = {
+    "x-apisports-key": API_KEY
+}
+
+def get_match_data(partita_nome: str) -> dict:
+    # Esempio: "Roma-Napoli"
+    try:
+        home_team, away_team = partita_nome.split("-")
+    except ValueError:
+        return {"errore": "Formato partita non valido."}
+
+    # Cerca le partite giocate ieri, oggi o domani per sicurezza
+    date_range = [
+        (datetime.today() - timedelta(days=1)).strftime("%Y-%m-%d"),
+        datetime.today().strftime("%Y-%m-%d"),
+        (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+    ]
+
+    for date in date_range:
+        url = f"{API_HOST}/fixtures?league=135&season=2024&date={date}"
+        resp = requests.get(url, headers=headers)
+        data = resp.json()
+
+        for match in data.get("response", []):
+            teams = match["teams"]
+            if home_team.lower() in teams["home"]["name"].lower() and away_team.lower() in teams["away"]["name"].lower():
+                fixture_id = match["fixture"]["id"]
+                return parse_fixture_data(fixture_id)
+
+    return {"errore": "Partita non trovata nelle date recenti."}
+
+def parse_fixture_data(fixture_id: int) -> dict:
+    url = f"{API_HOST}/fixtures?id={fixture_id}"
+    resp = requests.get(url, headers=headers)
+    data = resp.json()
+
+    if not data["response"]:
+        return {"errore": "Dettagli partita non trovati."}
+
+    match = data["response"][0]
+    goals = match["goals"]
+    events = match.get("events", [])
+
+    gol_casa = goals["home"]
+    gol_trasferta = goals["away"]
+    esito = (
+        "1" if gol_casa > gol_trasferta
+        else "2" if gol_trasferta > gol_casa
+        else "X"
+    )
+
+    # Statistiche base
+    stats_url = f"{API_HOST}/players?fixture={fixture_id}"
+    stats_resp = requests.get(stats_url, headers=headers)
+    stats_data = stats_resp.json()
+
+    giocatori = {}
+    for player_data in stats_data.get("response", []):
+        name = player_data["player"]["name"]
+        stats = player_data["statistics"][0]
+
+        giocatori[name] = {
+            "shots_on_target": stats["shots"]["on"] if stats["shots"] else 0,
+            "shots_total": stats["shots"]["total"] if stats["shots"] else 0,
+            "goals": stats["goals"]["total"] if stats["goals"] else 0,
+            "assists": stats["goals"]["assists"] if stats["goals"] else 0,
+            "cards": stats["cards"]["yellow"] + stats["cards"]["red"] if stats["cards"] else 0,
+            "passes": stats["passes"]["total"] if stats["passes"] else 0,
+            "saves": stats["goalkeeper"]["saves"] if "goalkeeper" in stats else 0
         }
+
+    return {
+        "esito": esito,
+        "gol_casa": gol_casa,
+        "gol_trasferta": gol_trasferta,
+        "gol_totali": gol_casa + gol_trasferta,
+        "statistiche_partita": {},
+        "giocatori": giocatori
     }
+
 
 def inizio_giornata() -> Tuple[Optional[int], Optional[str]]:
     """Mark the most recently extracted giornata as started.
