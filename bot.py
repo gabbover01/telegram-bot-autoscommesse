@@ -4,7 +4,7 @@ import json
 import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
-from game_utils import load_data, save_data, inizio_giornata
+from game_utils import load_data, save_data, inizio_giornata, fine_giornata 
 
 TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"
 DATA_FILE = "data.json"
@@ -199,6 +199,13 @@ async def inizio_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await update.message.reply_text("✅ Tutti hanno giocato! Giornata iniziata.")
 
+async def fine_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    giornata_num, error = fine_giornata()
+    if error:
+        await update.message.reply_text(f"❌ {error}")
+    else:
+        await update.message.reply_text(f"✅ Giornata {giornata_num} conclusa correttamente. Ora puoi usare /estrai per la prossima.")
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -206,6 +213,7 @@ def main():
     app.add_handler(CommandHandler("jolly", jolly))
     app.add_handler(CommandHandler("gioca", gioca))
     app.add_handler(CommandHandler("inizio_giornata", inizio_giornata_cmd))
+    app.add_handler(CommandHandler("fine_giornata", fine_giornata_cmd))
     app.add_handler(CallbackQueryHandler(handle_jolly_response))
 
     print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
