@@ -273,34 +273,56 @@ async def aggiorna_riepilogo_giocate(update: Update, context: ContextTypes.DEFAU
     giornata = data["bets"][g_key]
     bets = giornata.get("bets", {})
 
-    lines = ["📋 *GIOCATE GIORNATA {}*".format(g_key)]
+    lines = [f"📋 GIOCATE GIORNATA {g_key}"]
     for username in USERNAME_TO_NAME:
         if username in bets:
             giocata = bets[username]["giocata"]
             quota = bets[username]["quota"]
-            jolly = " 🃏" if bets[username]["jolly"] else ""
+            jolly = " 🃏" if bets[username].get("jolly") else ""
             lines.append(f"{username}: {giocata} @ {quota:.2f}{jolly}")
         else:
             lines.append(f"{username}: ❌ Non ancora giocato")
 
     text = "\n".join(lines)
-    message_id = giornata.get("summary_message_id")
     chat_id = update.effective_chat.id
 
+    # prova a depinnare un riepilogo precedente
+    try:
+        if "pinned_summary_id" in giornata:
+            await context.bot.unpin_chat_message(chat_id=chat_id, message_id=giornata["pinned_summary_id"])
+    except Exception as e:
+        print(f"[WARNING] Non riesco a depinnare il vecchio messaggio: {e}")
+
+    # se esiste, modifica il messaggio, altrimenti inviane uno nuovo
+    message_id = giornata.get("summary_message_id")
     if message_id:
         try:
             await context.bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=message_id,
                 text=text,
-                parse_mode="Markdown"
             )
+            new_msg_id = message_id
         except Exception as e:
             print("Errore aggiornamento messaggio:", e)
+            msg = await context.bot.send_message(chat_id=chat_id, text=text)
+            new_msg_id = msg.message_id
+            giornata["summary_message_id"] = new_msg_id
     else:
-        msg = await context.bot.send_message(chat_id=chat_id, text=text, parse_mode="Markdown")
-        giornata["summary_message_id"] = msg.message_id
-        save_data(data)
+        msg = await context.bot.send_message(chat_id=chat_id, text=text)
+        new_msg_id = msg.message_id
+        giornata["summary_message_id"] = new_msg_id
+
+    # pinna il nuovo riepilogo
+    try:
+        await context.bot.pin_chat_message(chat_id=chat_id, message_id=new_msg_id)
+        giornata["pinned_summary_id"] = new_msg_id
+    except Exception as e:
+        print(f"[WARNING] Non riesco a pinnare il riepilogo: {e}")
+
+    save_data(data)
+
+
 
 async def inizio_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     giornata_num, error = inizio_giornata()
@@ -456,22 +478,6 @@ async def versa(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text("⚠️ Usa il formato: /versa @username <euro>\nEsempio: /versa @Chris4rda 5")
 
-    giornata = result["giornata"]
-    assignments = result["assignments"]
-    leftover = result["leftover"]
-
-    text = f"🎲 *Partite estratte per la giornata {giornata}*\n\n"
-    for player, match in assignments.items():
-        username = next((u for u, n in USERNAME_TO_NAME.items() if n == player), player)
-        text += f"{username}: {match}\n"
-
-    if leftover:
-        text += "\n❗ Partite non assegnate:\n"
-        for match in leftover:
-            text += f"- {match}\n"
-
-    await update.message.reply_text(text, parse_mode="Markdown")
-
 async def malloppo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = load_data()
     args = context.args
@@ -526,7 +532,7 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
-    app.add_handler(CommandHandler("jolly", jolly))
+    app.add_handler(CallbackQueryHandler(handle_jolly_response, pattern="^jolly_"))
     app.add_handler(CommandHandler("gioca", gioca))
     app.add_handler(CommandHandler("inizio_giornata", inizio_giornata_cmd))
     app.add_handler(CommandHandler("fine_giornata", fine_giornata_cmd))
