@@ -17,7 +17,7 @@ TOT_JOLLY = 3
 JOLLY_PENALTY_EUR = 20
 
 # Admin che può usare /estrai /inizio_giornata /fine_giornata /esiti /versa
-ADMINS = {"@TuonomeTelegram"}
+ADMINS = {"@BTC_TonyStark"}
 
 # Mappa username -> Nome giocatore
 USERNAME_TO_NAME: Dict[str, str] = {
