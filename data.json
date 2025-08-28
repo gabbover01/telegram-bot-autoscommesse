@@ -3,7 +3,7 @@
         "Chri": {
             "points": 0,
             "jolly_used": 0,
-            "debt": 0
+            "debt": 5
         },
         "Gabbo": {
             "points": 0,
@@ -13,12 +13,12 @@
         "Pavi": {
             "points": 0,
             "jolly_used": 0,
-            "debt": 0
+            "debt": 5
         },
         "Fruca": {
             "points": 0,
             "jolly_used": 0,
-            "debt": 0
+            "debt": 5
         },
         "Effe": {
             "points": 0,
@@ -28,12 +28,12 @@
         "Gargiu": {
             "points": 0,
             "jolly_used": 0,
-            "debt": 0
+            "debt": 5
         },
         "Gio": {
             "points": 0,
             "jolly_used": 0,
-            "debt": 0
+            "debt": 5
         }
     },
     "games": {},
@@ -42,7 +42,7 @@
         "is_active": false
     },
     "malloppo": {
-        "giocate_sbagliate": 0,
+        "giocate_sbagliate": 25,
         "penali_jolly": 0,
         "giocate_gruppo": 0
     }
