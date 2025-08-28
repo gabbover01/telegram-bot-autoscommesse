@@ -45,5 +45,16 @@
         "giocate_sbagliate": 25,
         "penali_jolly": 0,
         "giocate_gruppo": 0
+    },
+    "giornate": {
+        "1": {
+            "errors": [
+                "Gio",
+                "Chri",
+                "Pavi",
+                "Gargiu",
+                "Fruca"
+            ]
+        }
     }
 }
