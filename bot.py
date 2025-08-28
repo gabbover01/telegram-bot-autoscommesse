@@ -408,12 +408,19 @@ def main():
             listen="0.0.0.0",
             port=int(os.environ.get("PORT", 8080)),
             webhook_url=WEBHOOK_URL,
+            drop_pending_updates=True,
         )
     else:
-        print("▶️ Avvio in polling (WEBHOOK_URL non impostato)")
-        app.run_polling()
+        # 👉 assicura che NON ci sia un webhook attivo quando usi il polling
+        import asyncio
+        asyncio.get_event_loop().run_until_complete(
+            app.bot.delete_webhook(drop_pending_updates=True)
+        )
 
+        print("▶️ Avvio in polling (WEBHOOK_URL non impostato)")
+        app.run_polling(
+            drop_pending_updates=True
+        )
 
 if __name__ == "__main__":
     main()
-
