@@ -411,16 +411,20 @@ def main():
             drop_pending_updates=True,
         )
     else:
-        # 👉 assicura che NON ci sia un webhook attivo quando usi il polling
+        # ✅ PULIZIA: se c'è un webhook attivo lo cancelliamo con lo STESSO token in uso
         import asyncio
-        asyncio.get_event_loop().run_until_complete(
-            app.bot.delete_webhook(drop_pending_updates=True)
-        )
+
+        async def _cleanup(bot):
+            info = await bot.get_webhook_info()
+            print("Webhook attuale:", info.url or "(nessuno)")
+            if info.url:
+                await bot.delete_webhook(drop_pending_updates=True)
+                print("Webhook cancellato.")
+
+        asyncio.get_event_loop().run_until_complete(_cleanup(app.bot))
 
         print("▶️ Avvio in polling (WEBHOOK_URL non impostato)")
-        app.run_polling(
-            drop_pending_updates=True
-        )
+        app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
