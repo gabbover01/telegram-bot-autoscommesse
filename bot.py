@@ -1,8 +1,7 @@
-# bot.py
 import os, re, json
 from typing import List, Dict
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 
 from game_utils import (
     load_data, save_data,
@@ -11,14 +10,16 @@ from game_utils import (
 )
 
 # ====== CONFIG ======
-TOKEN = os.getenv("BOT_TOKEN", "REPLACE_ME_TOKEN")  # metti in env, non in chiaro
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")              # es. https://tuo-app/render/...
-DATA_FILE = "data.json"
+TOKEN = os.getenv("BOT_TOKEN", "REPLACE_ME_TOKEN")  # set in Railway as BOT_TOKEN
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")              # es: https://<app>.up.railway.app
 MIN_QUOTA = 1.50
+TOT_JOLLY = 3
+JOLLY_PENALTY_EUR = 20
 
-# Admin che può usare /estrai /inizio_giornata /fine_giornata /esiti
-ADMINS = {"@Federico9499"}  # cambia/aggiungi se serve
+# Admin che può usare /estrai /inizio_giornata /fine_giornata /esiti /versa
+ADMINS = {os.getenv("ADMIN_USERNAME", "@Federico9499")}
 
+# Mappa username -> Nome giocatore
 USERNAME_TO_NAME: Dict[str, str] = {
     "@Federico_Lolli": "Effe",
     "@Federico9499": "Fruca",
@@ -28,14 +29,16 @@ USERNAME_TO_NAME: Dict[str, str] = {
     "@Chris4rda": "Chri",
     "@JoLaFlame": "Gio"
 }
-# invertita comoda
 NAME_TO_USERNAME = {v: k for k, v in USERNAME_TO_NAME.items()}
+
 
 # ====== HELPERS ======
 def is_admin(username: str) -> bool:
     return username in ADMINS
 
+
 async def pin_or_edit_summary(update: Update, context: ContextTypes.DEFAULT_TYPE, g_key: str) -> None:
+    """Crea/aggiorna e mette in pin il messaggio riassuntivo delle giocate della giornata."""
     data = load_data()
     giornata = data["bets"][g_key]
     bets = giornata.get("bets", {})
@@ -53,7 +56,6 @@ async def pin_or_edit_summary(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     chat_id = update.effective_chat.id
     try:
-        # de-pin vecchio
         if "pinned_summary_id" in giornata:
             await context.bot.unpin_chat_message(chat_id=chat_id, message_id=giornata["pinned_summary_id"])
     except Exception:
@@ -81,13 +83,18 @@ async def pin_or_edit_summary(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     save_data(data)
 
+
 # ====== COMMANDS ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Ciao! Bot autoscommesse ⚽\n"
-        "Comandi: /estrai /gioca /modifica /inizio_giornata /fine_giornata /esiti\n"
-        "/classifica /jolly /malloppo [solo_giocate] /soldi /versa @user 5 /giornate"
+        "Comandi:\n"
+        "/estrai  /inizio_giornata  /fine_giornata  /esiti (admin)\n"
+        "/gioca  /modifica\n"
+        "/classifica  /jolly  /Jolly  /malloppo [totale|solo giocate]\n"
+        "/soldi  /versa @user <euro> (admin)  /giornate  /aggiorna"
     )
+
 
 async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     d = load_data()
@@ -96,12 +103,14 @@ async def classifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
         txt += f"{u:<15} → {d['players'][name]['points']} punti\n"
     await update.message.reply_text(txt)
 
+
 async def jolly(update: Update, context: ContextTypes.DEFAULT_TYPE):
     d = load_data()
     txt = "🃏 Jolly usati:\n"
     for u, name in USERNAME_TO_NAME.items():
         txt += f"{u:<15} → {d['players'][name]['jolly_used']} jolly\n"
     await update.message.reply_text(txt)
+
 
 async def gioca(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -136,14 +145,27 @@ async def gioca(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "quota": quota,
         "jolly": quota < MIN_QUOTA
     }
-    # jolly count “soft”: conteggiamo solo a fine anno? Se vuoi, aggiorna anche qui
+
+    # Gestione jolly "a cicli" con penale dopo TOT_JOLLY
     if quota < MIN_QUOTA:
         name = USERNAME_TO_NAME[username]
-        d["players"][name]["jolly_used"] += 1
+        used = d["players"][name].get("jolly_used", 0) + 1
+        if used > TOT_JOLLY:
+            # scatta penale e riparte il conteggio
+            d["players"][name]["jolly_used"] = 1
+            d["players"][name]["debt"] = d["players"][name].get("debt", 0) + JOLLY_PENALTY_EUR
+            d["malloppo"]["penali_jolly"] += JOLLY_PENALTY_EUR
+            extra = f" 💸 Penale {JOLLY_PENALTY_EUR}€ applicata, jolly azzerati (ora 1/{TOT_JOLLY})."
+        else:
+            d["players"][name]["jolly_used"] = used
+            extra = f" 🃏 Jolly usato ({used}/{TOT_JOLLY})."
+    else:
+        extra = ""
 
     save_data(d)
-    await update.message.reply_text("✅ Giocata salvata.")
+    await update.message.reply_text(f"✅ Giocata salvata.{extra}")
     await pin_or_edit_summary(update, context, g_key)
+
 
 async def modifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -168,6 +190,7 @@ async def modifica(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_data(d)
     await update.message.reply_text("✏️ Giocata cancellata. Re-invia con /gioca …")
 
+
 async def estrai_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     username = f"@{user.username}"
@@ -189,6 +212,7 @@ async def estrai_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         txt += "\n❗ Partite non assegnate:\n" + "\n".join(f"- {m}" for m in leftover)
     await update.message.reply_text(txt, parse_mode="Markdown")
 
+
 async def inizio_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if f"@{user.username}" not in ADMINS:
@@ -200,6 +224,7 @@ async def inizio_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     await update.message.reply_text(f"🏁 Giornata {gnum} iniziata. Buone giocate!")
 
+
 async def fine_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if f"@{user.username}" not in ADMINS:
@@ -209,11 +234,10 @@ async def fine_giornata_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if err:
         await update.message.reply_text(f"❌ {err}")
         return
-    await update.message.reply_text(f"🧾 Giornata {gnum} chiusa. Ora usa /esiti per segnare chi ha perso.")
+    await update.message.reply_text(f"🧾 Giornata {gnum} chiusa. Ora usa /esiti (o /aggiorna) per segnare chi ha perso.")
+
 
 # ====== ESITI MANUALI ======
-# Stato temporaneo in chat_data:
-# chat_data["esiti"] = {"g_key": "N", "losers": set([...])}
 def _keyboard_esiti(losers: List[str]) -> InlineKeyboardMarkup:
     rows = []
     for u in USERNAME_TO_NAME:
@@ -224,6 +248,7 @@ def _keyboard_esiti(losers: List[str]) -> InlineKeyboardMarkup:
         InlineKeyboardButton("Annulla", callback_data="esiti_cancel")
     ])
     return InlineKeyboardMarkup(rows)
+
 
 async def esiti_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -242,12 +267,12 @@ async def esiti_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("ℹ️ La giornata non è ancora *finished*. Usa /fine_giornata prima.")
         return
 
-    # default: nessuno perdente
     context.chat_data["esiti"] = {"g_key": g_key, "losers": set()}
     await update.message.reply_text(
         f"Seleziona i PERDENTI della Giornata {g_key} (toggle sui nomi).",
         reply_markup=_keyboard_esiti([])
     )
+
 
 async def esiti_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -277,13 +302,13 @@ async def esiti_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         applica_esiti_manuali(g_key, losers_usernames, USERNAME_TO_NAME)
         context.chat_data.pop("esiti", None)
 
-        # riepilogo
         if losers_usernames:
             righe = [f"📌 Esiti G{g_key} salvati. Hanno perso:"]
             for u in losers_usernames: righe.append(f"- {u} (+1 punto, +5€)")
             await query.edit_message_text("\n".join(righe))
         else:
             await query.edit_message_text(f"📌 Esiti G{g_key} salvati. Nessun perdente 🎉")
+
 
 async def soldi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     d = load_data()
@@ -294,6 +319,7 @@ async def soldi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         status = "✅" if paid >= debt else "❌"
         txt += f"{u:<15} → Deve {debt}€, Ha versato {paid}€ {status}\n"
     await update.message.reply_text(txt, parse_mode="Markdown")
+
 
 async def versa(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -318,10 +344,11 @@ async def versa(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("Formato: /versa @username <euro>  (es: /versa @Chris4rda 5)")
 
+
 async def malloppo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     d = load_data()
-    args = context.args
-    solo = args and args[0] == "solo_giocate"
+    args = [a.lower() for a in context.args]
+    solo = (args == ["solo", "giocate"]) or (args and args[0] in {"solo_giocate", "solo"})
     m = d["malloppo"]
     totale = m["giocate_sbagliate"] + m["penali_jolly"] + m["giocate_gruppo"]
     if solo:
@@ -334,6 +361,7 @@ async def malloppo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"- Giocate di gruppo: {m['giocate_gruppo']}€"
         )
     await update.message.reply_text(text, parse_mode="Markdown")
+
 
 async def giornate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     d = load_data()
@@ -352,24 +380,26 @@ async def giornate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             resp += f"G{g_key}: 🏆 Nessun errore!\n"
     await update.message.reply_text(resp, parse_mode="Markdown")
 
+
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
     app.add_handler(CommandHandler("jolly", jolly))
+    app.add_handler(CommandHandler("Jolly", jolly))  # alias
     app.add_handler(CommandHandler("gioca", gioca))
     app.add_handler(CommandHandler("modifica", modifica))
     app.add_handler(CommandHandler("estrai", estrai_cmd))
     app.add_handler(CommandHandler("inizio_giornata", inizio_giornata_cmd))
     app.add_handler(CommandHandler("fine_giornata", fine_giornata_cmd))
     app.add_handler(CommandHandler("esiti", esiti_cmd))
+    app.add_handler(CommandHandler("aggiorna", esiti_cmd))  # alias di /esiti
     app.add_handler(CallbackQueryHandler(esiti_cb, pattern="^esiti_"))
     app.add_handler(CommandHandler("soldi", soldi))
     app.add_handler(CommandHandler("versa", versa))
     app.add_handler(CommandHandler("malloppo", malloppo))
     app.add_handler(CommandHandler("giornate", giornate))
 
-    # webhook (come avevi già)
     if WEBHOOK_URL:
         print(f"🚀 Imposto webhook su: {WEBHOOK_URL}")
         app.run_webhook(
@@ -381,5 +411,7 @@ def main():
         print("▶️ Avvio in polling (WEBHOOK_URL non impostato)")
         app.run_polling()
 
+
 if __name__ == "__main__":
     main()
+
