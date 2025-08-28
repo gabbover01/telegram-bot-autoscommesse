@@ -382,6 +382,8 @@ async def giornate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
+    print("ENV BOT_TOKEN presente:", bool(os.getenv("BOT_TOKEN")), flush=True)
+    print("TOKEN length:", len(TOKEN), flush=True)
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("classifica", classifica))
