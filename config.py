@@ -1,4 +1,0 @@
-import os
-
-TOKEN = "7719502887:AAHU2Cl9jrwxSJIUFZ8Esp2D-bQfcaQzk94"
-ODDS_API_KEY = "f31d96fd3f84d3134fcf169b00ad115b"
