@@ -1,7 +1,7 @@
 {
     "players": {
         "Chri": {
-            "points": 0,
+            "points": 1,
             "jolly_used": 0,
             "debt": 5
         },
@@ -11,12 +11,12 @@
             "debt": 0
         },
         "Pavi": {
-            "points": 0,
+            "points": 1,
             "jolly_used": 0,
             "debt": 5
         },
         "Fruca": {
-            "points": 0,
+            "points": 1,
             "jolly_used": 0,
             "debt": 5
         },
@@ -26,12 +26,12 @@
             "debt": 0
         },
         "Gargiu": {
-            "points": 0,
+            "points": 1,
             "jolly_used": 0,
             "debt": 5
         },
         "Gio": {
-            "points": 0,
+            "points": 1,
             "jolly_used": 0,
             "debt": 5
         }
@@ -55,6 +55,56 @@
                 "Gargiu",
                 "Fruca"
             ]
+        }
+    },
+    "bets": {
+        "1": {
+            "assignments": {},
+            "leftover": [],
+            "bets": {
+                "@JoLaFlame": {
+                    "giocata": "import-manuale",
+                    "quota": 1.5,
+                    "jolly": false,
+                    "tipo_verifica": "combo_esito",
+                    "dati_verifica": {},
+                    "esito": "persa"
+                },
+                "@Chris4rda": {
+                    "giocata": "import-manuale",
+                    "quota": 1.5,
+                    "jolly": false,
+                    "tipo_verifica": "combo_esito",
+                    "dati_verifica": {},
+                    "esito": "persa"
+                },
+                "@TheBu7cher": {
+                    "giocata": "import-manuale",
+                    "quota": 1.5,
+                    "jolly": false,
+                    "tipo_verifica": "combo_esito",
+                    "dati_verifica": {},
+                    "esito": "persa"
+                },
+                "@agggg21": {
+                    "giocata": "import-manuale",
+                    "quota": 1.5,
+                    "jolly": false,
+                    "tipo_verifica": "combo_esito",
+                    "dati_verifica": {},
+                    "esito": "persa"
+                },
+                "@Federico9499": {
+                    "giocata": "import-manuale",
+                    "quota": 1.5,
+                    "jolly": false,
+                    "tipo_verifica": "combo_esito",
+                    "dati_verifica": {},
+                    "esito": "persa"
+                }
+            },
+            "status": "finished",
+            "settled": true
         }
     }
 }
